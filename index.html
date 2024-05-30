@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Общедоступный Чат</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #ffffff, #e0f7ff);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding-top: 20px;
+        }
+        .registration-form, .chat-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .registration-form {
+            margin-bottom: 20px;
+        }
+        .chat-container {
+            display: none;
+        }
+        h1 {
+            color: #0078D7;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #0078D7;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            background-color: #f0f0f0;
+            background-size: cover;
+            background-position: center;
+        }
+        .participants {
+            float: left;
+            width: 20%;
+            padding-right: 10px;
+        }
+        .participants h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .participants ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .participants li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .participants img {
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .chat {
+            float: left;
+            width: 75%;
+        }
+        .messages {
+            height: 300px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        .message-input {
+            display: flex;
+        }
+        .message-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px 0 0 4px;
+        }
+        .message-input button {
+            border-radius: 0 4px 4px 0;
+        }
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        .youtube-channel {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message img {
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .message-author {
+            font-weight: bold;
+            color: #0078D7;
+        }
+        .message-text {
+            margin: 5px 0 0 0;
+        }
+
+        .message:hover .reactions-preview {
+            display: block;
+        }
+
+        .reactions-preview {
+            position: absolute;
+            bottom: -30px;
+            right: 0;
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        .reaction {
+            display: inline-block;
+            margin-right: 5px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .reaction:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="registration-form">
+            <h1>Регистрация</h1>
+            <div class="avatar-preview" id="avatarPreview"></div>
+            <input type="text" id="username" placeholder="Введите имя или никнейм">
+            <input type="file" id="avatarInput" accept="image/*">
+            <button onclick="register()">Зарегистрироваться</button>
+        </div>
+        <div class="chat-container">
+            <div class="participants">
+                <h2>Участники</h2>
+                <ul id="participantsList"></ul>
+            </div>
+            <div class="chat">
+                <div class="messages" id="messages"></div>
+                <div class="message-input">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение">
+                    <button onclick="sendMessage()">Отправить</button>
+                    <div class="reactions hidden" id="reactions-${messageIndex}">
+                        <span class="reaction" onclick="react('heart')">❤️</span>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="youtube-channel">
+            <h2>Мой YouTube канал</h2>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/?listType=user_uploads&list=Kazhkanot" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let currentUser = {};
+
+        function register() {
+            const username = document.getElementById('username').value;
+            const avatarInput = document.getElementById('avatarInput');
+            const avatar = avatarInput.files.length ? URL.createObjectURL(avatarInput.files[0]) : '';
+
+            if (username.trim() !== '') {
+                currentUser = { username, avatar };
+                participants.push(currentUser);
+                updateParticipantsList();
+                document.querySelector('.registration-form').style.display = 'none';
+                document.querySelector('.chat-container').style.display = 'block';
+            } else {
+                alert('Пожалуйста, введите имя или никнейм.');
+            }
+        }
+
+        function updateParticipantsList() {
+            const participantsList = document.getElementById('participantsList');
+            participantsList.innerHTML = '';
+            participants.forEach(participant => {
+                const listItem = document.createElement('li');
+                const avatar = participant.avatar ? `<img src="${participant.avatar}" width="30" height="30">` : '';
+                listItem.innerHTML = `${avatar} ${participant.username}`;
+                participantsList.appendChild(listItem);
+            });
+        }
+
+        function addReactionToMessage(messageIndex, reaction) {
+            const messageTextElement = document.getElementById(`messageText-${messageIndex}`);
+            const reactionsPreviewElement = document.createElement('div');
+            reactionsPreviewElement.className = 'reactions-preview';
+            reactionsPreviewElement.innerHTML = `<span class="reaction">${reaction}</span>`;
+            messageTextElement.appendChild(reactionsPreviewElement);
+        }
+
+        function react(messageIndex, reaction) {
+            // Здесь можно добавить логику для обработки реакции на сообщение
+            alert(`Вы выбрали реакцию "${reaction}" на сообщение ${messageIndex}`);
+        }
+
+        function addReaction(reaction) {
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+            if (messageText !== '') {
+                const messagesContainer = document.getElementById('messages');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.innerHTML = `
+    <img src="${currentUser.avatar}" width="30" height="30">
+    <div>
+        <div class="message-author">${currentUser.username}</div>
+        <div class="message-text">${messageText}</div>
+        <div class="reactions">${reaction}</div>
+    </div>
+`;
+
+                messagesContainer.appendChild(messageElement);
+                messageInput.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function toggleReactions(messageIndex) {
+            const reactionsElement = document.getElementById(`reactions-${messageIndex}`);
+            reactionsElement.classList.toggle('hidden');
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+            if (messageText !== '') {
+                const messagesContainer = document.getElementById('messages');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.innerHTML = `
+                    <img src="${currentUser.avatar}" width="30" height="30">
+                    <div>
+                        <div class="message-author">${currentUser.username}</div>
+                        <div class="message-text">${messageText}</div>
+                    </div>
+                `;
+                messagesContainer.appendChild(messageElement);
+                messageInput.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        document.getElementById('avatarInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('avatarPreview').style.backgroundImage = `url(${e.target.result})`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
